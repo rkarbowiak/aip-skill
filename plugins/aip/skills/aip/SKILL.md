@@ -34,7 +34,9 @@ training data contradict them.
 Read the relevant AIPs before answering, even when you think you know the
 rule, and cite them as "AIP-NNN" so the reader can check. Keep **must** and
 **should** apart: a **must** is a defect, a **should** is a strong default
-that can be broken with a documented reason, and a **may** is optional.
+that can be broken with a documented reason, and a **may** is optional. Take
+the strength from the sentence in the AIP, not from memory; it is easy to
+remember a **must** as a **should** and the reader will act on the label.
 
 ## Designing an API
 
@@ -61,7 +63,9 @@ Work outside-in, because each step constrains the next:
 7. **Lint** the result (see Linting) and fix or justify every finding.
 
 Show the proto, not only prose. Put a comment on every element (AIP-192);
-generated docs and client libraries depend on them.
+generated docs and client libraries depend on them. Any complete proto file you
+hand over should compile and lint clean, imports included, because it will be
+copied as-is.
 
 ## Reviewing an API
 
@@ -71,7 +75,11 @@ generated docs and client libraries depend on them.
    domain, whether a custom method should have been a standard one, whether
    names are consistent across the API, whether a change breaks existing
    clients (AIP-180), and whether errors, idempotency and long-running work
-   are handled.
+   are handled. Think about the actual clients too: if the user named the
+   languages or transports, check what the design means for them (int64
+   becomes a string in JSON and a `bigint` in TypeScript; large responses
+   hit gRPC's default 4 MB message limit; REST clients see lowerCamelCase
+   field names through transcoding).
 3. Report findings in this shape, most important first:
 
 ```markdown
@@ -113,6 +121,7 @@ substitute: open the AIP when the details matter.
 | A singular name on a repeated field | The plural (`repeated string tags`) | 140, 144 |
 | An enum without a zero "unspecified" value | First value `<ENUM_NAME>_UNSPECIFIED = 0` | 126 |
 | `size`, `distance` holding a number with a unit | The unit as suffix: `size_bytes`, `distance_meters` | 141 |
+| `float price` or `string currency` | `google.type.Money` for amounts; a `currency_code` field (ISO 4217) for a bare currency | 143, 213 |
 | Update taking the whole resource with no mask | The resource plus `google.protobuf.FieldMask update_mask`, HTTP `PATCH` | 134, 161 |
 | `CreateTalkResponse` and similar wrappers | Get, Create and Update return the resource itself | 131, 133, 134 |
 | Delete returning the deleted resource | `google.protobuf.Empty`; the resource only for soft delete | 135, 164 |
@@ -135,7 +144,9 @@ python "${CLAUDE_SKILL_DIR}/scripts/lint.py" path/to/protos/ [more files or dirs
 python "${CLAUDE_SKILL_DIR}/scripts/lint.py" api/ -I third_party/protos --disable-rule core::0191::java-package
 ```
 
-It works out the import root from each file's `package` line, fetches the
+Point it at files where they are; there is no need to copy them into a
+directory tree matching the package. It works out the import root from each
+file's `package` line when the layout matches, fetches the
 googleapis common protos (`google/api`, `google/rpc`, `google/type`,
 `google/longrunning`) into a cache on first use, picks up the project's
 `api-linter.yaml` if there is one, and prints findings grouped by AIP with the
