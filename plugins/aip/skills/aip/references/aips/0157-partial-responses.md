@@ -12,7 +12,7 @@ Contents:
   - [View enumeration](#view-enumeration)
   - [Read masks as a request field](#read-masks-as-a-request-field)
 - [Rationale](#rationale)
-  - [Deprecating read_mask in request messages](#deprecating-readmask-in-request-messages)
+  - [Deprecating read_mask in request messages](#deprecating-read_mask-in-request-messages)
 - [Changelog](#changelog)
 
 Sometimes, a resource can be either large or expensive to compute, and the API

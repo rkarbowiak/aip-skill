@@ -1,0 +1,23 @@
+aip-skill
+Copyright 2026 Radosław Karbowiak
+
+This project is not affiliated with or endorsed by Google.
+
+The skill, scripts and tooling in this repository are licensed under the
+Apache License, Version 2.0 (see LICENSE).
+
+The files in plugins/aip/skills/aip/references/aips/ are copies of the API
+Improvement Proposals published at https://google.aip.dev, taken from
+https://github.com/aip-dev/google.aip.dev at the commit recorded in UPSTREAM.
+Copyright Google LLC. Their text is licensed under the Creative Commons
+Attribution 4.0 International License
+(https://creativecommons.org/licenses/by/4.0/) and their code samples under the
+Apache License, Version 2.0. Changes made by tools/sync_aips.py: front matter
+removed, the title prefixed with the AIP number, a source note and a contents
+list added, and cross-links rewritten to point at the local copies.
+references/index.md is derived from the same documents.
+
+api-linter (https://github.com/googleapis/api-linter) is not bundled; the lint
+script calls a copy the user installs. The googleapis common protos
+(https://github.com/googleapis/googleapis, Apache 2.0) are downloaded at run
+time, not redistributed.

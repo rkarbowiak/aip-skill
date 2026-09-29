@@ -1,0 +1,46 @@
+name: Plugin evals
+
+# Runs real model calls, so it is manual only.
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: Runs per case per arm
+        default: "3"
+
+permissions:
+  contents: read
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install tools
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          go install github.com/googleapis/api-linter/v2/cmd/api-linter@latest
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Run evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          claude plugin eval ./plugins/aip \
+            --trust-plugin --no-publish \
+            --runs "${{ inputs.runs }}" \
+            --threshold 0.8 \
+            --max-cost-usd 20 \
+            --json results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: |
+            results.json
+            plugins/aip/evals/results/

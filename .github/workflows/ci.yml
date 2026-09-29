@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Bundled AIPs match the pinned upstream commit
+        run: python tools/sync_aips.py --check
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Validate marketplace and plugin
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate . --strict
+          claude plugin validate ./plugins/aip --strict
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Lint script end to end
+        run: |
+          go install github.com/googleapis/api-linter/v2/cmd/api-linter@latest
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          python plugins/aip/skills/aip/scripts/lint.py plugins/aip/skills/aip/references/examples
+          set +e
+          python plugins/aip/skills/aip/scripts/lint.py tests/fixtures/bad.proto
+          status=$?
+          set -e
+          test "$status" -eq 1 || { echo "expected findings (exit 1), got $status"; exit 1; }

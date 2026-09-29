@@ -1,0 +1,39 @@
+name: Sync AIPs
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pin the latest upstream commit and regenerate
+        id: sync
+        run: |
+          python tools/sync_aips.py --update 2>&1 | tee sync.log
+          echo "commit=$(cut -c1-12 UPSTREAM)" >> "$GITHUB_OUTPUT"
+
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: sync/aips
+          commit-message: "Sync AIPs to aip-dev/google.aip.dev@${{ steps.sync.outputs.commit }}"
+          title: "Sync AIPs to upstream ${{ steps.sync.outputs.commit }}"
+          body: |
+            Automated sync of the bundled AIPs from aip-dev/google.aip.dev.
+            Review the diff for new or changed guidance that SKILL.md's quick
+            reference should reflect.
+          add-paths: |
+            UPSTREAM
+            plugins/aip/skills/aip

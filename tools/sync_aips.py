@@ -96,7 +96,7 @@ def slugify(title: str) -> str:
 
 def github_anchor(heading: str) -> str:
     """Anchor the way GitHub renders it: lowercase, drop punctuation, spaces to dashes."""
-    text = re.sub(r"`|\*|_", "", heading).strip().lower()
+    text = re.sub(r"[`*]", "", heading).strip().lower()
     text = re.sub(r"[^\w\- ]", "", text)
     return text.replace(" ", "-")
 
