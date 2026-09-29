@@ -1,0 +1,41 @@
+# AIP-3: AIP Versioning
+
+> Source: <https://google.aip.dev/3> (state: approved, category: meta).
+> Copied from aip-dev/google.aip.dev@23e176e7333e under CC BY 4.0 (text) and
+> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,
+> contents list added, links rewritten to local files.
+
+This AIP defines the versioning scheme of the AIPs.
+
+## Guidance
+
+- The AIPs **must** be versioned by date, using the [ISO-8601 format of
+  `YYYY-MM-DD`](https://www.w3.org/TR/NOTE-datetime), that corresponds to the
+  date the version was added.
+- AIPs versions **must** be available as a tag on the source control system used
+  to store the AIPs, of the format `v{version}`. Example: `v2023-03-28`.
+- The AIPs **must** have a new version when there is a significant change to one
+  or more AIPs.
+- Each AIP **must** include a changelog section, with the date the change was
+  made and a short description.
+
+## Rationale
+
+Versions serve as reference points to AIPs at a specific point in time. They are
+crucial since guidance on an AIP can be reversed, or include significant changes
+such that they are no longer similar to the original design. APIs using AIPs may
+need to reference older AIP guidance to justify their design choice.
+
+### Rationale for date-based versioning
+
+With date-based versioning, a client can easily find the AIP guidance at the
+time an API was authored.
+
+### Why not individually versioned AIPs
+
+An alternative to a universal version is to have specific versions attached to
+each AIP.
+
+AIPs often cross-reference one another. If each AIP had a specific version, then
+cross-references would also have to specify specific versions of those
+referenced AIPs to provide complete guidance.

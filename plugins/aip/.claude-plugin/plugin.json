@@ -1,0 +1,14 @@
+{
+  "name": "aip",
+  "displayName": "AIP: Google API Improvement Proposals",
+  "version": "0.1.0",
+  "description": "Design and review gRPC/protobuf/REST APIs against Google's API Improvement Proposals, with the approved AIPs bundled and an api-linter wrapper.",
+  "author": {
+    "name": "Radosław Karbowiak",
+    "url": "https://github.com/rkarbowiak"
+  },
+  "homepage": "https://github.com/rkarbowiak/aip-skill",
+  "repository": "https://github.com/rkarbowiak/aip-skill",
+  "license": "Apache-2.0 AND CC-BY-4.0",
+  "keywords": ["aip", "api-design", "grpc", "protobuf", "rest", "api-linter", "google"]
+}

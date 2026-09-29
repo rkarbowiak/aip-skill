@@ -1,0 +1,172 @@
+syntax = "proto3";
+
+package agenda.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Agenda.V1";
+option go_package = "example.com/agenda/apiv1/agendapb;agendapb";
+option java_multiple_files = true;
+option java_outer_classname = "TalkProto";
+option java_package = "com.example.agenda.v1";
+option php_namespace = "Agenda\\V1";
+option ruby_package = "Agenda::V1";
+
+// Manages the talks of a conference agenda.
+service TalkService {
+  option (google.api.default_host) = "agenda.example.com";
+
+  // Gets a talk.
+  rpc GetTalk(GetTalkRequest) returns (Talk) {
+    option (google.api.http) = {
+      get: "/v1/{name=conferences/*/talks/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists the talks of a conference.
+  rpc ListTalks(ListTalksRequest) returns (ListTalksResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=conferences/*}/talks"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Creates a talk.
+  rpc CreateTalk(CreateTalkRequest) returns (Talk) {
+    option (google.api.http) = {
+      post: "/v1/{parent=conferences/*}/talks"
+      body: "talk"
+    };
+    option (google.api.method_signature) = "parent,talk,talk_id";
+  }
+
+  // Updates a talk.
+  rpc UpdateTalk(UpdateTalkRequest) returns (Talk) {
+    option (google.api.http) = {
+      patch: "/v1/{talk.name=conferences/*/talks/*}"
+      body: "talk"
+    };
+    option (google.api.method_signature) = "talk,update_mask";
+  }
+
+  // Deletes a talk.
+  rpc DeleteTalk(DeleteTalkRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=conferences/*/talks/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+}
+
+// A talk given at a conference.
+message Talk {
+  option (google.api.resource) = {
+    type: "agenda.example.com/Talk"
+    pattern: "conferences/{conference}/talks/{talk}"
+    plural: "talks"
+    singular: "talk"
+  };
+
+  // Identifier. The resource name of the talk.
+  // Format: conferences/{conference}/talks/{talk}
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Required. The title shown in the agenda.
+  string title = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. A short summary of the talk.
+  string summary = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Output only. When the talk was created.
+  google.protobuf.Timestamp create_time = 4
+      [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Output only. When the talk was last updated.
+  google.protobuf.Timestamp update_time = 5
+      [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Request message for GetTalk.
+message GetTalkRequest {
+  // Required. The name of the talk to get.
+  // Format: conferences/{conference}/talks/{talk}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "agenda.example.com/Talk"}
+  ];
+}
+
+// Request message for ListTalks.
+message ListTalksRequest {
+  // Required. The conference that owns the talks.
+  // Format: conferences/{conference}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "agenda.example.com/Talk"}
+  ];
+
+  // Optional. The maximum number of talks to return. The service may return
+  // fewer than this value. If unspecified, at most 50 talks are returned. The
+  // maximum value is 1000; values above 1000 are coerced to 1000.
+  int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. A page token received from a previous `ListTalks` call. Provide
+  // this to retrieve the subsequent page. All other parameters must match the
+  // call that provided the page token.
+  string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for ListTalks.
+message ListTalksResponse {
+  // The talks of the conference.
+  repeated Talk talks = 1;
+
+  // A token to retrieve the next page. If this field is omitted, there are no
+  // subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request message for CreateTalk.
+message CreateTalkRequest {
+  // Required. The conference where the talk is created.
+  // Format: conferences/{conference}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "agenda.example.com/Talk"}
+  ];
+
+  // Required. The talk to create.
+  Talk talk = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. The ID to use for the talk, which becomes the final component of
+  // its resource name. Must match `[a-z]([a-z0-9-]{0,61}[a-z0-9])?`.
+  string talk_id = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for UpdateTalk.
+message UpdateTalkRequest {
+  // Required. The talk to update. Its `name` identifies the talk.
+  Talk talk = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. The fields to update. If omitted, all populated fields of `talk`
+  // are updated.
+  google.protobuf.FieldMask update_mask = 2
+      [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for DeleteTalk.
+message DeleteTalkRequest {
+  // Required. The name of the talk to delete.
+  // Format: conferences/{conference}/talks/{talk}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "agenda.example.com/Talk"}
+  ];
+}

@@ -1,0 +1,24 @@
+{
+  "name": "aip-skill",
+  "description": "Google API Improvement Proposals (AIPs) as a Claude Code skill, for designing and reviewing gRPC, protobuf and REST APIs.",
+  "owner": {
+    "name": "Radosław Karbowiak",
+    "url": "https://github.com/rkarbowiak"
+  },
+  "plugins": [
+    {
+      "name": "aip",
+      "source": "./plugins/aip",
+      "description": "Design and review gRPC/protobuf/REST APIs against Google's API Improvement Proposals, with the approved AIPs bundled and an api-linter wrapper.",
+      "category": "development",
+      "tags": ["api-design", "grpc", "protobuf", "aip", "api-linter"],
+      "relevance": {
+        "topic": "API design with protobuf",
+        "signals": {
+          "filesRead": ["**/*.proto", "**/buf.yaml", "**/api-linter.yaml"],
+          "cli": ["protoc", "buf", "api-linter"]
+        }
+      }
+    }
+  ]
+}

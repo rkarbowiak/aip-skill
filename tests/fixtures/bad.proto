@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package agenda.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+service TalkService {
+  rpc GetTalk(GetTalkRequest) returns (Talk) {
+    option (google.api.http) = {get: "/v1/{name=talks/*}"};
+  }
+  rpc ListTalks(ListTalksRequest) returns (ListTalksResponse);
+}
+
+message Talk {
+  string name = 1;
+  string title = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message GetTalkRequest {
+  string name = 1;
+}
+
+message ListTalksRequest {
+  int32 limit = 1;
+}
+
+message ListTalksResponse {
+  repeated Talk talks = 1;
+}
