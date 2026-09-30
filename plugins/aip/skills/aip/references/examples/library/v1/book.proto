@@ -1,0 +1,231 @@
+syntax = "proto3";
+
+package library.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "Library.V1";
+option go_package = "example.com/library/apiv1/librarypb;librarypb";
+option java_multiple_files = true;
+option java_outer_classname = "BookProto";
+option java_package = "com.example.library.v1";
+option php_namespace = "Library\\V1";
+option ruby_package = "Library::V1";
+
+// Manages the books of a publisher's catalog.
+service BookService {
+  option (google.api.default_host) = "library.example.com";
+
+  // Gets a book.
+  rpc GetBook(GetBookRequest) returns (Book) {
+    option (google.api.http) = {
+      get: "/v1/{name=publishers/*/books/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists the books of a publisher.
+  rpc ListBooks(ListBooksRequest) returns (ListBooksResponse) {
+    option (google.api.http) = {
+      get: "/v1/{parent=publishers/*}/books"
+    };
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Creates a book.
+  rpc CreateBook(CreateBookRequest) returns (Book) {
+    option (google.api.http) = {
+      post: "/v1/{parent=publishers/*}/books"
+      body: "book"
+    };
+    option (google.api.method_signature) = "parent,book,book_id";
+  }
+
+  // Updates a book.
+  rpc UpdateBook(UpdateBookRequest) returns (Book) {
+    option (google.api.http) = {
+      patch: "/v1/{book.name=publishers/*/books/*}"
+      body: "book"
+    };
+    option (google.api.method_signature) = "book,update_mask";
+  }
+
+  // Deletes a book.
+  rpc DeleteBook(DeleteBookRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/{name=publishers/*/books/*}"
+    };
+    option (google.api.method_signature) = "name";
+  }
+
+  // Archives a book. Archived books stay readable but are no longer sold.
+  rpc ArchiveBook(ArchiveBookRequest) returns (Book) {
+    option (google.api.http) = {
+      post: "/v1/{name=publishers/*/books/*}:archive"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+}
+
+// A book in a publisher's catalog.
+message Book {
+  option (google.api.resource) = {
+    type: "library.example.com/Book"
+    pattern: "publishers/{publisher}/books/{book}"
+    plural: "books"
+    singular: "book"
+  };
+
+  // The lifecycle state of a book.
+  enum State {
+    // The default value. This value is unused.
+    STATE_UNSPECIFIED = 0;
+
+    // The book is available.
+    ACTIVE = 1;
+
+    // The book has been archived with ArchiveBook.
+    ARCHIVED = 2;
+  }
+
+  // Identifier. The resource name of the book.
+  // Format: publishers/{publisher}/books/{book}
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Required. The title of the book.
+  string title = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. The names of the book's authors, in display order.
+  repeated string authors = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. The number of pages in the printed edition.
+  int32 page_count = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Output only. The lifecycle state of the book.
+  State state = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Output only. When the book was created.
+  google.protobuf.Timestamp create_time = 6
+      [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Output only. When the book was last updated.
+  google.protobuf.Timestamp update_time = 7
+      [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // A checksum of the book's current state, computed by the server. Send it
+  // back on update, delete and archive requests to avoid overwriting a newer
+  // version.
+  string etag = 8;
+}
+
+// Request message for GetBook.
+message GetBookRequest {
+  // Required. The name of the book to get.
+  // Format: publishers/{publisher}/books/{book}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "library.example.com/Book"}
+  ];
+}
+
+// Request message for ListBooks.
+message ListBooksRequest {
+  // Required. The publisher that owns the books.
+  // Format: publishers/{publisher}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "library.example.com/Book"}
+  ];
+
+  // Optional. The maximum number of books to return. The service may return
+  // fewer than this value. If unspecified, at most 50 books are returned. The
+  // maximum value is 1000; values above 1000 are coerced to 1000.
+  int32 page_size = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. A page token received from a previous `ListBooks` call. Provide
+  // this to retrieve the subsequent page. All other parameters must match the
+  // call that provided the page token.
+  string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. A filter in the AIP-160 syntax, for example
+  // `state = ACTIVE AND page_count > 300`.
+  string filter = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Optional. A comma-separated list of fields to order by, for example
+  // `create_time desc`. The default order is by `name`.
+  string order_by = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for ListBooks.
+message ListBooksResponse {
+  // The books of the publisher.
+  repeated Book books = 1;
+
+  // A token to retrieve the next page. If this field is omitted, there are no
+  // subsequent pages.
+  string next_page_token = 2;
+}
+
+// Request message for CreateBook.
+message CreateBookRequest {
+  // Required. The publisher where the book is created.
+  // Format: publishers/{publisher}
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {child_type: "library.example.com/Book"}
+  ];
+
+  // Required. The book to create.
+  Book book = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. The ID to use for the book, which becomes the final component of
+  // its resource name. Must match `[a-z]([a-z0-9-]{0,61}[a-z0-9])?`. If
+  // omitted, the service assigns one.
+  string book_id = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for UpdateBook.
+message UpdateBookRequest {
+  // Required. The book to update. Its `name` identifies the book.
+  Book book = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // Optional. The fields to update. If omitted, all populated fields of `book`
+  // are updated.
+  google.protobuf.FieldMask update_mask = 2
+      [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for DeleteBook.
+message DeleteBookRequest {
+  // Required. The name of the book to delete.
+  // Format: publishers/{publisher}/books/{book}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "library.example.com/Book"}
+  ];
+
+  // Optional. The etag of the book. If it does not match the current etag,
+  // the request fails with ABORTED.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for ArchiveBook.
+message ArchiveBookRequest {
+  // Required. The name of the book to archive.
+  // Format: publishers/{publisher}/books/{book}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "library.example.com/Book"}
+  ];
+
+  // Optional. The etag of the book. If it does not match the current etag,
+  // the request fails with ABORTED.
+  string etag = 2 [(google.api.field_behavior) = OPTIONAL];
+}

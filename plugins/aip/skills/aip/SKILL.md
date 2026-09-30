@@ -27,9 +27,9 @@ training data contradict them.
    alone doesn't tell you which one applies. Grep across `references/aips/`
    for a field or annotation name (`update_mask`, `operation_info`,
    `ErrorInfo`).
-4. `references/examples/agenda/v1/talk.proto` is a small, lint-clean API
-   (a resource, the five standard methods, pagination, an update mask) to
-   copy patterns from.
+4. `references/examples/library/v1/book.proto` is a small, lint-clean API
+   (a resource, the five standard methods, a custom state-changing method,
+   pagination, filtering, an update mask, etags) to copy patterns from.
 
 Read the relevant AIPs before answering, even when you think you know the
 rule, and cite them as "AIP-NNN" so the reader can check. Keep **must** and
@@ -59,7 +59,7 @@ Work outside-in, because each step constrains the next:
    IDs for idempotency (155), etags (154), validate-only (163), soft delete
    (164), errors (193).
 6. **Package and files** (AIP-185, 191): a versioned package such as
-   `agenda.v1`, file layout, language package options.
+   `library.v1`, file layout, language package options.
 7. **Lint** the result (see Linting) and fix or justify every finding.
 
 Show the proto, not only prose. Put a comment on every element (AIP-192);
@@ -114,7 +114,7 @@ substitute: open the AIP when the details matter.
 |---|---|---|
 | `created_at`, `updated_at`, `creation_date` | `create_time`, `update_time` as `google.protobuf.Timestamp` (`_time` suffix) | 142, 148 |
 | `int32 timeout_seconds` for a span of time | `google.protobuf.Duration timeout` | 142 |
-| `id` or `talk_id` as the resource's identifier | `string name` with the full resource name, `field_behavior = IDENTIFIER` | 122, 203 |
+| `id` or `book_id` as the resource's identifier | `string name` with the full resource name, `field_behavior = IDENTIFIER` | 122, 203 |
 | `limit` / `offset` on list requests | `page_size` and `page_token` in the request, `next_page_token` in the response | 158 |
 | A List method without pagination "for now" | Pagination from the start; adding it later is a breaking change | 158 |
 | `is_active`, `is_public` | `active`, `public` (booleans omit the `is` prefix) | 140 |
@@ -123,14 +123,14 @@ substitute: open the AIP when the details matter.
 | `size`, `distance` holding a number with a unit | The unit as suffix: `size_bytes`, `distance_meters` | 141 |
 | `float price` or `string currency` | `google.type.Money` for amounts; a `currency_code` field (ISO 4217) for a bare currency | 143, 213 |
 | Update taking the whole resource with no mask | The resource plus `google.protobuf.FieldMask update_mask`, HTTP `PATCH` | 134, 161 |
-| `CreateTalkResponse` and similar wrappers | Get, Create and Update return the resource itself | 131, 133, 134 |
+| `CreateBookResponse` and similar wrappers | Get, Create and Update return the resource itself | 131, 133, 134 |
 | Delete returning the deleted resource | `google.protobuf.Empty`; the resource only for soft delete | 135, 164 |
-| A client-chosen ID mixed into the resource | `string talk_id` on the Create request | 133 |
+| A client-chosen ID mixed into the resource | `string book_id` on the Create request | 133 |
 | Request fields without annotations | `(google.api.field_behavior)` on every request field, at least `REQUIRED`, `OPTIONAL` or `OUTPUT_ONLY` | 203 |
 | A `status` string that clients set | A nested `enum State`, field `state`, `OUTPUT_ONLY`, changed through custom methods | 216 |
 | Custom error payloads or bare status codes | `google.rpc.Status` with canonical codes and an `ErrorInfo` in `details` | 193 |
 | An RPC that may take minutes returning its result | `google.longrunning.Operation` with an `operation_info` annotation | 151 |
-| No version, or `v1.2`, in the package | The major version at the end of the package: `agenda.v1`, `agenda.v1beta` | 185 |
+| No version, or `v1.2`, in the package | The major version at the end of the package: `library.v1`, `library.v1beta` | 185 |
 | A custom method for what a standard method covers | The standard method; custom methods (`:verb`) are the exception | 136 |
 
 ## Linting

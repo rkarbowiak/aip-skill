@@ -1,31 +1,31 @@
 syntax = "proto3";
 
-package agenda.v1;
+package library.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
-service TalkService {
-  rpc GetTalk(GetTalkRequest) returns (Talk) {
-    option (google.api.http) = {get: "/v1/{name=talks/*}"};
+service BookService {
+  rpc GetBook(GetBookRequest) returns (Book) {
+    option (google.api.http) = {get: "/v1/{name=books/*}"};
   }
-  rpc ListTalks(ListTalksRequest) returns (ListTalksResponse);
+  rpc ListBooks(ListBooksRequest) returns (ListBooksResponse);
 }
 
-message Talk {
+message Book {
   string name = 1;
   string title = 2;
   google.protobuf.Timestamp created_at = 3;
 }
 
-message GetTalkRequest {
+message GetBookRequest {
   string name = 1;
 }
 
-message ListTalksRequest {
+message ListBooksRequest {
   int32 limit = 1;
 }
 
-message ListTalksResponse {
-  repeated Talk talks = 1;
+message ListBooksResponse {
+  repeated Book books = 1;
 }

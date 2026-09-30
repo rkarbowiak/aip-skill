@@ -87,7 +87,7 @@ def collect_protos(paths: list[str]) -> list[Path]:
 def import_root(proto: Path) -> Path:
     """Directory that imports of this file are relative to.
 
-    For proto/agenda/v1/talk.proto with `package agenda.v1;` that is proto/.
+    For proto/library/v1/book.proto with `package library.v1;` that is proto/.
     Falls back to the nearest buf.yaml, then to the file's own directory.
     """
     text = proto.read_text(encoding="utf-8", errors="replace")
