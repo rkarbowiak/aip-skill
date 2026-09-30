@@ -6,11 +6,12 @@ on:
   pull_request:
   # Started by the Sync AIPs workflow on its PR branch: pull requests opened
   # with GITHUB_TOKEN don't trigger pull_request runs, but workflow_dispatch
-  # does run, and its result shows on the PR's head commit.
+  # does. Such runs report a commit status, which the PR's checks list shows.
   workflow_dispatch:
 
 permissions:
   contents: read
+  statuses: write
 
 env:
   # Pinned so a new linter rule or CLI release can't turn main red on its own.
@@ -24,7 +25,15 @@ defaults:
 jobs:
   check:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STATUS_URL: repos/${{ github.repository }}/statuses/${{ github.sha }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
     steps:
+      - name: Report pending status (dispatched runs)
+        if: github.event_name == 'workflow_dispatch'
+        run: gh api "$STATUS_URL" -f state=pending -f context="CI / check" -f target_url="$RUN_URL" -f description="Running" > /dev/null
+
       - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v7
@@ -61,3 +70,9 @@ jobs:
           npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
           claude plugin validate . --strict
           claude plugin validate ./plugins/aip --strict
+
+      - name: Report final status (dispatched runs)
+        if: always() && github.event_name == 'workflow_dispatch'
+        run: |
+          state=$([ "${{ job.status }}" = success ] && echo success || echo failure)
+          gh api "$STATUS_URL" -f state="$state" -f context="CI / check" -f target_url="$RUN_URL" -f description="${{ job.status }}" > /dev/null
