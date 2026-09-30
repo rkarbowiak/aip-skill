@@ -72,13 +72,14 @@ plugins/aip/
   .claude-plugin/plugin.json
   skills/aip/
     SKILL.md                      instructions + generated AIP index
+    LICENSE, NOTICE               copies, so the folder stays attributed on its own
     references/aips/              71 approved AIPs (generated)
     references/index.md           one-line summary per AIP (generated)
     references/examples/          lint-clean example API
     scripts/lint.py               api-linter wrapper
   evals/                          `claude plugin eval` suite
 tools/sync_aips.py                regenerates references from upstream
-tests/                            unit tests and lint fixtures
+tests/                            sync and lint-wrapper tests, fixtures
 UPSTREAM                          pinned aip-dev/google.aip.dev commit
 ```
 
