@@ -1,9 +1,10 @@
 # AIP-236: Policy preview
 
 > Source: <https://google.aip.dev/236> (state: approved, category: resource-design).
-> Copied from aip-dev/google.aip.dev@23e176e7333e under CC BY 4.0 (text) and
-> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,
-> contents list added, links rewritten to local files.
+> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the
+> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code
+> samples). Changes: front matter removed, title prefixed, contents list
+> added, links rewritten to local files.
 
 Contents:
 
@@ -21,7 +22,7 @@ Contents:
     - [stopPreview](#stoppreview)
     - [commit](#commit)
   - [Changes to live policy API methods](#changes-to-live-policy-api-methods)
-    - [delete](#delete)
+    - [delete](#delete-1)
   - [Logging](#logging)
 - [Changelog](#changelog)
 

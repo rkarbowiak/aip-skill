@@ -1,9 +1,10 @@
 # AIP-211: Authorization checks
 
 > Source: <https://google.aip.dev/211> (state: approved, category: design-patterns).
-> Copied from aip-dev/google.aip.dev@23e176e7333e under CC BY 4.0 (text) and
-> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,
-> contents list added, links rewritten to local files.
+> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the
+> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code
+> samples). Changes: front matter removed, title prefixed, contents list
+> added, links rewritten to local files.
 
 The majority of operations, whether reads or writes, require authorization:
 permission to do the thing the user is asking to do. Additionally, it is

@@ -1,9 +1,10 @@
 # AIP-215: API-specific protos
 
 > Source: <https://google.aip.dev/215> (state: approved, category: protobuf).
-> Copied from aip-dev/google.aip.dev@23e176e7333e under CC BY 4.0 (text) and
-> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,
-> contents list added, links rewritten to local files.
+> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the
+> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code
+> samples). Changes: front matter removed, title prefixed, contents list
+> added, links rewritten to local files.
 
 APIs are mostly defined in terms of protos which are API-specific, with
 occasional dependencies on common components. Keeping APIs isolated from each

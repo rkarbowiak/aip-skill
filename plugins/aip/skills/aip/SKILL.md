@@ -1,7 +1,7 @@
 ---
 name: aip
-description: Design and review APIs against Google's API Improvement Proposals (AIPs, google.aip.dev), with every approved AIP bundled and an api-linter wrapper. Use it whenever someone designs, writes or reviews a .proto file, gRPC service, protobuf message or resource-oriented REST API, including resource names and hierarchy, field naming, standard methods (Get/List/Create/Update/Delete), custom methods, pagination, filtering, field masks, long-running operations, error responses, field_behavior annotations, versioning or backwards compatibility. Also use it when an AIP is mentioned by number ("AIP-158"), when someone asks whether an API follows Google's API design guidelines, or when api-linter findings need fixing, even if the word "AIP" never comes up.
-license: Apache-2.0 (skill and scripts); bundled AIP text is CC BY 4.0 by Google, see NOTICE
+description: Design and review APIs against Google's API Improvement Proposals (AIPs, google.aip.dev), with every approved general AIP bundled and an api-linter wrapper. Use it whenever someone designs, writes or reviews a .proto file, gRPC service, protobuf message or resource-oriented REST API, including resource names and hierarchy, field naming, standard methods (Get/List/Create/Update/Delete), custom methods, pagination, filtering, field masks, long-running operations, error responses, field_behavior annotations, versioning or backwards compatibility. Also use it when an AIP is mentioned by number ("AIP-158"), when someone asks whether an API follows Google's API design guidelines, or when api-linter findings need fixing, even if the word "AIP" never comes up.
+license: Apache-2.0 (skill and scripts, see LICENSE); bundled AIP text (c) Google LLC under CC BY 4.0, see NOTICE
 compatibility: Linting needs Python 3, git and api-linter (go install github.com/googleapis/api-linter/v2/cmd/api-linter@latest). Everything else works without them.
 ---
 
@@ -35,8 +35,11 @@ Read the relevant AIPs before answering, even when you think you know the
 rule, and cite them as "AIP-NNN" so the reader can check. Keep **must** and
 **should** apart: a **must** is a defect, a **should** is a strong default
 that can be broken with a documented reason, and a **may** is optional. Take
-the strength from the sentence in the AIP, not from memory; it is easy to
-remember a **must** as a **should** and the reader will act on the label.
+the strength from the sentence in the AIP, not from memory and not from the
+wording of an api-linter message (those sometimes say "should" for a
+**must**); the reader will act on the label. When the AIP only recommends
+something without a normative keyword, say "recommended" instead of inventing
+a strength.
 
 ## Designing an API
 
@@ -53,7 +56,8 @@ Work outside-in, because each step constrains the next:
    Reach for a custom method (AIP-136) only when a standard one cannot express
    the operation.
 4. **Fields** (AIP-140 to 149, 203, 216): names, types, units, time, enums,
-   and a `field_behavior` on every request field.
+   and a `field_behavior` on every field of every message used in a request,
+   the resource message included (the `etag` field is the exception).
 5. **Cross-cutting patterns** as needed: pagination (158), filtering (160),
    ordering (132), field masks (161), long-running operations (151), request
    IDs for idempotency (155), etags (154), validate-only (163), soft delete
@@ -77,9 +81,10 @@ copied as-is.
    clients (AIP-180), and whether errors, idempotency and long-running work
    are handled. Think about the actual clients too: if the user named the
    languages or transports, check what the design means for them (int64
-   becomes a string in JSON and a `bigint` in TypeScript; large responses
-   hit gRPC's default 4 MB message limit; REST clients see lowerCamelCase
-   field names through transcoding).
+   is a string in proto JSON, and TypeScript generators differ: protobuf-es
+   uses `bigint`, others `number` or `string`; large responses hit gRPC's
+   default 4 MB message limit; REST clients see lowerCamelCase field names
+   through transcoding).
 3. Report findings in this shape, most important first:
 
 ```markdown
@@ -107,52 +112,56 @@ in a new major version (AIP-185).
 
 ## Quick reference
 
-The rules people most often get wrong. Each row is a pointer, not a
-substitute: open the AIP when the details matter.
+The rules people most often get wrong, with the strength the AIP gives them.
+Each row is a pointer, not a substitute: open the AIP when the details matter,
+and read the exceptions it lists before calling something a defect.
 
-| Instead of | Use | AIP |
-|---|---|---|
-| `created_at`, `updated_at`, `creation_date` | `create_time`, `update_time` as `google.protobuf.Timestamp` (`_time` suffix) | 142, 148 |
-| `int32 timeout_seconds` for a span of time | `google.protobuf.Duration timeout` | 142 |
-| `id` or `book_id` as the resource's identifier | `string name` with the full resource name, `field_behavior = IDENTIFIER` | 122, 203 |
-| `limit` / `offset` on list requests | `page_size` and `page_token` in the request, `next_page_token` in the response | 158 |
-| A List method without pagination "for now" | Pagination from the start; adding it later is a breaking change | 158 |
-| `is_active`, `is_public` | `active`, `public` (booleans omit the `is` prefix) | 140 |
-| A singular name on a repeated field | The plural (`repeated string tags`) | 140, 144 |
-| An enum without a zero "unspecified" value | First value `<ENUM_NAME>_UNSPECIFIED = 0` | 126 |
-| `size`, `distance` holding a number with a unit | The unit as suffix: `size_bytes`, `distance_meters` | 141 |
-| `float price` or `string currency` | `google.type.Money` for amounts; a `currency_code` field (ISO 4217) for a bare currency | 143, 213 |
-| Update taking the whole resource with no mask | The resource plus `google.protobuf.FieldMask update_mask`, HTTP `PATCH` | 134, 161 |
-| `CreateBookResponse` and similar wrappers | Get, Create and Update return the resource itself | 131, 133, 134 |
-| Delete returning the deleted resource | `google.protobuf.Empty`; the resource only for soft delete | 135, 164 |
-| A client-chosen ID mixed into the resource | `string book_id` on the Create request | 133 |
-| Request fields without annotations | `(google.api.field_behavior)` on every request field, at least `REQUIRED`, `OPTIONAL` or `OUTPUT_ONLY` | 203 |
-| A `status` string that clients set | A nested `enum State`, field `state`, `OUTPUT_ONLY`, changed through custom methods | 216 |
-| Custom error payloads or bare status codes | `google.rpc.Status` with canonical codes and an `ErrorInfo` in `details` | 193 |
-| An RPC that may take minutes returning its result | `google.longrunning.Operation` with an `operation_info` annotation | 151 |
-| No version, or `v1.2`, in the package | The major version at the end of the package: `library.v1`, `library.v1beta` | 185 |
-| A custom method for what a standard method covers | The standard method; custom methods (`:verb`) are the exception | 136 |
+| Instead of | Use | Strength | AIP |
+|---|---|---|---|
+| `created_at`, `updated_at`, `creation_date` | `create_time`, `update_time` as `google.protobuf.Timestamp` | must (148 standard fields); `_time` suffix in general: should | 148, 142 |
+| `int32 timeout_seconds` for a span of time | `google.protobuf.Duration timeout` | should | 142 |
+| `id` or `book_id` as the resource's identifier | `string name` with the full resource name, `field_behavior = IDENTIFIER` | must | 122, 203 |
+| A List method without pagination "for now" | Pagination from the start; adding it later is breaking | must | 158 |
+| `limit` / `offset` on list requests | `page_size` and `page_token` in the request, `next_page_token` in the response | should | 158 |
+| `is_active`, `is_public` | `active`, `public` (booleans omit the `is` prefix, except to avoid a reserved word) | should | 140 |
+| A singular name on a repeated field | The plural (`repeated string tags`) | must | 144 |
+| An enum without a zero "unspecified" value | First value `<ENUM_NAME>_UNSPECIFIED = 0`, unless a real zero value such as `UNKNOWN` is clearer | should | 126 |
+| `size`, `distance` holding a number with a unit | The unit as suffix: `size_bytes`, `distance_meters` | must | 141 |
+| `float price` or `string currency` | `google.type.Money` for amounts; a field named `currency_code` (ISO 4217) for a bare currency | Money: recommended; `currency_code`: must | 143, 213 |
+| Update taking the whole resource with no mask | The resource plus `google.protobuf.FieldMask update_mask`; HTTP `PATCH` | mask type and name: must; `PATCH`: should | 134, 161 |
+| `CreateBookResponse` and similar wrappers | Get, Create and Update return the resource itself | must | 131, 133, 134 |
+| Delete returning the deleted resource | `google.protobuf.Empty`; the resource only for soft delete | should | 135, 164 |
+| A client-chosen ID mixed into the resource | `string book_id` on the Create request | must (management plane), should (data plane) | 133 |
+| Unannotated fields in request messages | `(google.api.field_behavior)` on every field of every message used in a request, including the resource in Create and Update, with at least `REQUIRED`, `OPTIONAL` or `OUTPUT_ONLY`; the resource's `etag` gets none | must (etag: should not) | 203 |
+| A `status` string that clients set | A nested `enum State`, field `state`, output only, changed through custom methods | should | 216 |
+| Custom error payloads or bare status codes | `google.rpc.Status` with canonical codes and an `ErrorInfo` in `details` | must | 193 |
+| An RPC that may take minutes returning its result | `google.longrunning.Operation` with an `operation_info` annotation, plus the `Operations` service | should use an LRO; once used, the annotation and service: must | 151 |
+| No version, or `v1.2`, in the package | The major version at the end of the package: `library.v1`, `library.v1beta` | must | 185 |
+| A custom method for what a standard method covers | The standard method; custom methods (`:verb`) are the exception | should | 136 |
 
 ## Linting
 
 `scripts/lint.py` wraps [api-linter](https://linter.aip.dev), Google's
 implementation of the AIP rules. In Claude Code the script is at
-`${CLAUDE_SKILL_DIR}/scripts/lint.py`:
+`${CLAUDE_SKILL_DIR}/scripts/lint.py` (use `python3` on macOS and Linux,
+`python` on Windows):
 
 ```bash
-python "${CLAUDE_SKILL_DIR}/scripts/lint.py" path/to/protos/ [more files or dirs]
-python "${CLAUDE_SKILL_DIR}/scripts/lint.py" api/ -I third_party/protos --disable-rule core::0191::java-package
+python3 "${CLAUDE_SKILL_DIR}/scripts/lint.py" path/to/protos/ [more files or dirs]
+python3 "${CLAUDE_SKILL_DIR}/scripts/lint.py" api/ -I third_party/protos --disable-rule core::0191::java-package
 ```
 
-Point it at files where they are; there is no need to copy them into a
-directory tree matching the package. It works out the import root from each
-file's `package` line when the layout matches, fetches the
-googleapis common protos (`google/api`, `google/rpc`, `google/type`,
-`google/longrunning`) into a cache on first use, picks up the project's
-`api-linter.yaml` if there is one, and prints findings grouped by AIP with the
-path of the bundled AIP to read. Exit code 0 means clean, 1 means findings,
-2 means a setup or compile problem; the message says what to install or which
-import is missing.
+Point it at the files where they are. It works out each file's import root
+from its `package` line (or the nearest `buf.yaml`), so a single file you just
+wrote can be linted in place. Files that import each other by package path,
+such as `import "library/v1/common.proto"`, need that directory layout or a
+`-I` to the root that has it. The script fetches the googleapis common protos
+(`google/api`, `google/rpc`, `google/type`, `google/longrunning`) into a cache
+when an import needs them, picks up an `api-linter.yaml` from the current
+directory, the import roots or their parents, and prints findings grouped by
+AIP with paths relative to the current directory and the bundled AIP to read.
+Exit code 0 means clean, 1 means findings, 2 means a setup or compile problem;
+the message says what to install or which import is missing.
 
 If api-linter is not installed, tell the user the install command the script
 prints and carry on with a manual review. Don't install tools without asking.
@@ -171,12 +180,20 @@ only generate Go or TypeScript often disable them. Disable a rule with
   disabled_rules: ["core::0191::java-package"]
 ```
 
-or with a comment on the element, which keeps the reason next to the code:
+or with a comment, which keeps the reason next to the code. Put it directly
+above the element the rule is about: a message, field or RPC for most rules,
+and the `syntax` or `package` line for file-level rules such as the AIP-191
+options:
 
 ```proto
 // (-- api-linter: core::0191::java-package=disabled
 //     aip.dev/not-precedent: We do not generate Java clients. --)
+package library.v1;
 ```
+
+Path patterns in an `api-linter.yaml` (`included_paths`, `excluded_paths`) are
+matched against paths relative to each file's import root, such as
+`library/v1/book.proto`, not relative to the config file.
 
 ## REST and OpenAPI
 

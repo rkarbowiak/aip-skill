@@ -9,6 +9,10 @@ permissions:
   contents: write
   pull-requests: write
 
+defaults:
+  run:
+    shell: bash # runs with -eo pipefail
+
 jobs:
   sync:
     runs-on: ubuntu-latest
@@ -19,14 +23,26 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Pin the latest upstream commit and regenerate
+      - name: Sync from upstream HEAD
         id: sync
         run: |
           python tools/sync_aips.py --update 2>&1 | tee sync.log
           echo "commit=$(cut -c1-12 UPSTREAM)" >> "$GITHUB_OUTPUT"
 
-      - uses: peter-evans/create-pull-request@v7
+      # Pull requests opened with GITHUB_TOKEN don't trigger the CI workflow,
+      # so run the offline checks here before opening one.
+      - name: Check the result
+        run: |
+          python -m unittest discover -s tests -v
+          python tools/sync_aips.py --check
+
+      # Set a SYNC_TOKEN secret (a fine-grained PAT or app token with
+      # contents and pull-requests write) if CI should run on the PR too.
+      # Without it, allow "GitHub Actions to create and approve pull requests"
+      # in the repository settings.
+      - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
           branch: sync/aips
           commit-message: "Sync AIPs to aip-dev/google.aip.dev@${{ steps.sync.outputs.commit }}"
           title: "Sync AIPs to upstream ${{ steps.sync.outputs.commit }}"

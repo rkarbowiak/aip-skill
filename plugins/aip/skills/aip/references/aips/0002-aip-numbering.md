@@ -1,9 +1,10 @@
 # AIP-2: AIP Numbering
 
 > Source: <https://google.aip.dev/2> (state: approved, category: meta).
-> Copied from aip-dev/google.aip.dev@23e176e7333e under CC BY 4.0 (text) and
-> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,
-> contents list added, links rewritten to local files.
+> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the
+> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code
+> samples). Changes: front matter removed, title prefixed, contents list
+> added, links rewritten to local files.
 
 The AIP system provides a mechanism to index and have a single source of truth
 for API Improvement Proposals, as well as iterate on them collaboratively and

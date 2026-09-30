@@ -1,7 +1,7 @@
 # AIP index
 
-All approved general AIPs bundled with this skill (upstream commit 23e176e7333e),
-grouped the way <https://google.aip.dev/general> groups them. Each entry links to
+All approved general AIPs bundled with this skill, grouped the way
+<https://google.aip.dev/general> groups them. Each entry links to
 the local copy and quotes the first sentence of its guidance.
 
 ## Meta

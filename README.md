@@ -58,8 +58,8 @@ googleapis common protos (`google/api`, `google/rpc`, `google/type`,
 ## Using the lint script directly
 
 ```
-python plugins/aip/skills/aip/scripts/lint.py path/to/protos/
-python plugins/aip/skills/aip/scripts/lint.py api/ -I third_party --disable-rule core::0191::java-package
+python3 plugins/aip/skills/aip/scripts/lint.py path/to/protos/
+python3 plugins/aip/skills/aip/scripts/lint.py api/ -I third_party --disable-rule core::0191::java-package
 ```
 
 Exit code 0 means clean, 1 means findings, 2 means a setup or compile error.
@@ -89,21 +89,26 @@ in `SKILL.md` is generated. Don't edit those by hand; change
 `tools/sync_aips.py` instead.
 
 ```
-python tools/sync_aips.py            # regenerate from the pinned commit
-python tools/sync_aips.py --update   # pin the latest upstream commit, then regenerate
-python tools/sync_aips.py --check    # CI: fail if generated files are stale
-python -m unittest discover -s tests
+python3 tools/sync_aips.py            # regenerate from the pinned commit
+python3 tools/sync_aips.py --update   # sync from upstream HEAD, pin it if content changed
+python3 tools/sync_aips.py --check    # CI: fail if generated files are stale
+python3 -m unittest discover -s tests  # lint tests need api-linter
 claude plugin validate . --strict
 claude plugin eval ./plugins/aip     # runs model calls; costs money
 ```
 
-A weekly GitHub Action pins the newest upstream commit and opens a pull
-request when the AIPs change. When one lands, check whether the quick
-reference in `SKILL.md` needs updating.
+A weekly GitHub Action syncs from upstream and opens a pull request when a
+bundled AIP changed; it runs the tests before opening it. Pull requests opened
+with the default `GITHUB_TOKEN` don't trigger CI, so either add a `SYNC_TOKEN`
+secret (a fine-grained token with contents and pull-requests write) or allow
+GitHub Actions to create pull requests in the repository settings. When a sync
+lands, check whether the quick reference in `SKILL.md` needs updating.
 
 ## License
 
-The skill, scripts and tooling are Apache 2.0 (see [LICENSE](LICENSE)). The
+The skill, scripts and tooling are Apache 2.0 (see [LICENSE](LICENSE)); the
+skill folder carries its own copy of LICENSE and NOTICE so it stays
+attributed when copied on its own. The
 bundled AIPs are © Google LLC, text under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) and code samples
 under Apache 2.0; see [NOTICE](NOTICE) for the source and the changes made.

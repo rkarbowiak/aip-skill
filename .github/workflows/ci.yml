@@ -8,6 +8,15 @@ on:
 permissions:
   contents: read
 
+env:
+  # Pinned so a new linter rule or CLI release can't turn main red on its own.
+  API_LINTER_VERSION: v2.4.0
+  CLAUDE_CODE_VERSION: 2.1.285
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -18,11 +27,25 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Unit tests
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Install api-linter
+        run: |
+          go install "github.com/googleapis/api-linter/v2/cmd/api-linter@${API_LINTER_VERSION}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Unit and lint-wrapper tests
         run: python -m unittest discover -s tests -v
 
       - name: Bundled AIPs match the pinned upstream commit
         run: python tools/sync_aips.py --check
+
+      - name: The skill folder carries its license and notice
+        run: |
+          cmp LICENSE plugins/aip/skills/aip/LICENSE
+          cmp NOTICE plugins/aip/skills/aip/NOTICE
 
       - uses: actions/setup-node@v4
         with:
@@ -30,21 +53,6 @@ jobs:
 
       - name: Validate marketplace and plugin
         run: |
-          npm install -g @anthropic-ai/claude-code
+          npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
           claude plugin validate . --strict
           claude plugin validate ./plugins/aip --strict
-
-      - uses: actions/setup-go@v5
-        with:
-          go-version: stable
-
-      - name: Lint script end to end
-        run: |
-          go install github.com/googleapis/api-linter/v2/cmd/api-linter@latest
-          export PATH="$(go env GOPATH)/bin:$PATH"
-          python plugins/aip/skills/aip/scripts/lint.py plugins/aip/skills/aip/references/examples
-          set +e
-          python plugins/aip/skills/aip/scripts/lint.py tests/fixtures/bad.proto
-          status=$?
-          set -e
-          test "$status" -eq 1 || { echo "expected findings (exit 1), got $status"; exit 1; }

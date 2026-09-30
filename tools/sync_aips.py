@@ -9,7 +9,7 @@ compact index block inside SKILL.md).
 Usage:
   python tools/sync_aips.py                 # clone the pinned commit and sync
   python tools/sync_aips.py --source DIR    # use an existing upstream checkout
-  python tools/sync_aips.py --update        # pin the latest upstream commit first
+  python tools/sync_aips.py --update        # sync from upstream HEAD; pin it if content changed
   python tools/sync_aips.py --check         # fail if the output would change
 
 Standard library only.
@@ -227,23 +227,39 @@ def headings_outside_code(body: str, max_level: int = 6) -> list[tuple[int, str]
     return result
 
 
-def render_aip(aip: Aip, local: dict[int, Aip], commit: str) -> str:
+def heading_anchors(body: str, max_level: int = 6) -> list[tuple[int, str, str]]:
+    """(level, heading, anchor) with GitHub's -1, -2 suffixes for repeated headings."""
+    seen: dict[str, int] = {}
+    result = []
+    for level, heading in headings_outside_code(body):
+        anchor = github_anchor(heading)
+        count = seen.get(anchor, 0)
+        seen[anchor] = count + 1
+        if level <= max_level:
+            result.append((level, heading, f"{anchor}-{count}" if count else anchor))
+    return result
+
+
+def render_aip(aip: Aip, local: dict[int, Aip]) -> str:
+    # The upstream commit is recorded in UPSTREAM only, so a sync that changes
+    # nothing in an AIP leaves its file untouched.
     body = rewrite_links(aip.body, local).rstrip() + "\n"
     lines = [
         f"# AIP-{aip.id}: {aip.title}",
         "",
         f"> Source: <{aip.url}> (state: {aip.state}, category: {aip.category}).",
-        f"> Copied from aip-dev/google.aip.dev@{commit[:12]} under CC BY 4.0 (text) and",
-        "> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,",
-        "> contents list added, links rewritten to local files.",
+        "> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the",
+        "> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code",
+        "> samples). Changes: front matter removed, title prefixed, contents list",
+        "> added, links rewritten to local files.",
         "",
     ]
     if body.count("\n") >= TOC_MIN_LINES:
         lines.append("Contents:")
         lines.append("")
-        for level, heading in headings_outside_code(body, max_level=4):
+        for level, heading, anchor in heading_anchors(body, max_level=4):
             indent = "  " * (level - 2)
-            lines.append(f"{indent}- [{plain_text(heading)}](#{github_anchor(heading)})")
+            lines.append(f"{indent}- [{plain_text(heading)}](#{anchor})")
         lines.append("")
     return "\n".join(lines) + "\n" + body
 
@@ -251,7 +267,7 @@ def render_aip(aip: Aip, local: dict[int, Aip], commit: str) -> str:
 def check_links(docs: dict[str, str]) -> list[str]:
     """Report links between bundled AIPs whose file or anchor does not exist."""
     anchors = {
-        name: {github_anchor(h) for _, h in headings_outside_code(text)} for name, text in docs.items()
+        name: {anchor for _, _, anchor in heading_anchors(text)} for name, text in docs.items()
     }
     problems = []
     for name, text in docs.items():
@@ -272,12 +288,12 @@ def check_links(docs: dict[str, str]) -> list[str]:
 # ---------------------------------------------------------------- index
 
 
-def render_index(aips: list[Aip], categories: dict[str, str], commit: str) -> str:
+def render_index(aips: list[Aip], categories: dict[str, str]) -> str:
     out = [
         "# AIP index",
         "",
-        f"All approved general AIPs bundled with this skill (upstream commit {commit[:12]}),",
-        "grouped the way <https://google.aip.dev/general> groups them. Each entry links to",
+        "All approved general AIPs bundled with this skill, grouped the way",
+        "<https://google.aip.dev/general> groups them. Each entry links to",
         "the local copy and quotes the first sentence of its guidance.",
         "",
     ]
@@ -320,7 +336,7 @@ def checkout(commit: str, dest: Path) -> None:
     git("checkout", "-q", "FETCH_HEAD", cwd=dest)
 
 
-def build(source: Path, commit: str) -> dict[Path, str]:
+def build(source: Path) -> dict[Path, str]:
     """Return every generated file and its content (SKILL.md included)."""
     all_aips = load_aips(source)
     aips = [a for a in all_aips if a.state in INCLUDED_STATES]
@@ -330,8 +346,8 @@ def build(source: Path, commit: str) -> dict[Path, str]:
     if unknown:
         raise ValueError(f"categories missing from scope.yaml: {unknown}")
 
-    files = {AIPS_DIR / a.filename: render_aip(a, local, commit) for a in aips}
-    files[INDEX_FILE] = render_index(aips, categories, commit)
+    files = {AIPS_DIR / a.filename: render_aip(a, local) for a in aips}
+    files[INDEX_FILE] = render_index(aips, categories)
 
     skill = SKILL_FILE.read_text(encoding="utf-8")
     if INDEX_BEGIN not in skill or INDEX_END not in skill:
@@ -348,14 +364,13 @@ def build(source: Path, commit: str) -> dict[Path, str]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--source", type=Path, help="existing google.aip.dev checkout (skips cloning)")
-    parser.add_argument("--update", action="store_true", help="pin the latest upstream commit before syncing")
-    parser.add_argument("--check", action="store_true", help="exit 1 if the generated files are out of date")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--update", action="store_true", help="sync from upstream HEAD and pin it if anything changed")
+    mode.add_argument("--check", action="store_true", help="exit 1 if the generated files are out of date")
     args = parser.parse_args()
 
-    if args.update:
-        head = git("ls-remote", UPSTREAM_URL, "HEAD").split()[0]
-        UPSTREAM_FILE.write_text(head + "\n", encoding="utf-8")
-    commit = UPSTREAM_FILE.read_text(encoding="utf-8").strip()
+    pinned = UPSTREAM_FILE.read_text(encoding="utf-8").strip()
+    commit = git("ls-remote", UPSTREAM_URL, "HEAD").split()[0] if args.update else pinned
 
     with tempfile.TemporaryDirectory() as tmp:
         source = args.source
@@ -366,7 +381,7 @@ def main() -> int:
             actual = git("rev-parse", "HEAD", cwd=source)
             if actual != commit:
                 print(f"warning: --source is at {actual[:12]}, UPSTREAM pins {commit[:12]}", file=sys.stderr)
-        files = build(source, commit)
+        files = build(source)
 
     stale = {p for p in AIPS_DIR.glob("*.md")} - set(files)
     changed = [p for p, t in files.items() if not p.exists() or p.read_text(encoding="utf-8") != t]
@@ -381,6 +396,11 @@ def main() -> int:
         p.unlink()
     for p in changed:
         p.write_text(files[p], encoding="utf-8", newline="\n")
+    # Pin the new commit only after its content is written, and only when it
+    # changed something, so upstream commits that touch nothing bundled here
+    # don't produce a sync pull request.
+    if args.update and (changed or stale) and commit != pinned:
+        UPSTREAM_FILE.write_text(commit + "\n", encoding="utf-8", newline="\n")
     aip_count = len(files) - 2
     print(f"synced {aip_count} AIPs at {commit[:12]}: {len(changed)} written, {len(stale)} removed")
     return 0

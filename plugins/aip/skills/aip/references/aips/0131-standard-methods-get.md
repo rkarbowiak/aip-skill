@@ -1,9 +1,10 @@
 # AIP-131: Standard methods: Get
 
 > Source: <https://google.aip.dev/131> (state: approved, category: operations).
-> Copied from aip-dev/google.aip.dev@23e176e7333e under CC BY 4.0 (text) and
-> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,
-> contents list added, links rewritten to local files.
+> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the
+> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code
+> samples). Changes: front matter removed, title prefixed, contents list
+> added, links rewritten to local files.
 
 In REST APIs, it is customary to make a `GET` request to a resource's URI (for
 example, `/v1/publishers/{publisher}/books/{book}`) in order to retrieve that

@@ -1,9 +1,10 @@
 # AIP-214: Resource expiration
 
 > Source: <https://google.aip.dev/214> (state: approved, category: design-patterns).
-> Copied from aip-dev/google.aip.dev@23e176e7333e under CC BY 4.0 (text) and
-> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,
-> contents list added, links rewritten to local files.
+> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the
+> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code
+> samples). Changes: front matter removed, title prefixed, contents list
+> added, links rewritten to local files.
 
 Customers often want to provide the time that a given resource or resource
 attribute is no longer useful or valid (e.g. a rotating security key). Currently

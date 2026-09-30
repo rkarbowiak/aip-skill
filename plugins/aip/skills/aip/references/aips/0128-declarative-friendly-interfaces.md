@@ -1,9 +1,10 @@
 # AIP-128: Declarative-friendly interfaces
 
 > Source: <https://google.aip.dev/128> (state: approved, category: resource-design).
-> Copied from aip-dev/google.aip.dev@23e176e7333e under CC BY 4.0 (text) and
-> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,
-> contents list added, links rewritten to local files.
+> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the
+> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code
+> samples). Changes: front matter removed, title prefixed, contents list
+> added, links rewritten to local files.
 
 Many services need to interact with common DevOps tools, particularly those
 that create and manage network-addressable resources (such as virtual machines,

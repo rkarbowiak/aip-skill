@@ -1,9 +1,10 @@
 # AIP-185: API Versioning
 
 > Source: <https://google.aip.dev/185> (state: approved, category: compatibility).
-> Copied from aip-dev/google.aip.dev@23e176e7333e under CC BY 4.0 (text) and
-> Apache 2.0 (code samples). Changes: front matter removed, title prefixed,
-> contents list added, links rewritten to local files.
+> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the
+> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code
+> samples). Changes: front matter removed, title prefixed, contents list
+> added, links rewritten to local files.
 
 Contents:
 
@@ -14,7 +15,7 @@ Contents:
     - [Version designation](#version-designation)
     - [Previews](#previews)
     - [API evolution](#api-evolution)
-    - [Deprecating API functionality](#deprecating-api-functionality)
+    - [Deprecating API functionality](#deprecating-api-functionality-1)
   - [Release-based versioning](#release-based-versioning)
   - [Visibility-based versioning](#visibility-based-versioning)
 

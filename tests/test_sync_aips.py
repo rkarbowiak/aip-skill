@@ -76,6 +76,11 @@ class Anchors(unittest.TestCase):
         self.assertEqual(sync_aips.github_anchor("HTTP/1.1+JSON representation"), "http11json-representation")
         self.assertEqual(sync_aips.github_anchor("`display_name`"), "display_name")
 
+    def test_repeated_headings_get_numbered_anchors(self):
+        body = "## Guidance\n\n### Notes\n\n## Rationale\n\n### Notes\n"
+        anchors = [anchor for _, _, anchor in sync_aips.heading_anchors(body)]
+        self.assertEqual(anchors, ["guidance", "notes", "rationale", "notes-1"])
+
     def test_check_links_reports_missing_anchor_only(self):
         docs = {"a.md": "## Guidance\n\n[ok](#guidance) [bad](#nope) [x](b.md#there)\n", "b.md": "## There\n"}
         self.assertEqual(sync_aips.check_links(docs), ["a.md: link to missing anchor #nope (upstream issue)"])
