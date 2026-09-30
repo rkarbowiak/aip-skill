@@ -1,8 +1,8 @@
 # AIP-180: Backwards compatibility
 
 > Source: <https://google.aip.dev/180> (state: approved, category: compatibility).
-> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the
-> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code
+> (c) Google LLC. Copied from aip-dev/google.aip.dev (the commit is in
+> references/UPSTREAM) under CC BY 4.0 (text) and Apache 2.0 (code
 > samples). Changes: front matter removed, title prefixed, contents list
 > added, links rewritten to local files.
 

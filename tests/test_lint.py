@@ -5,6 +5,7 @@ googleapis fetch); they are skipped when api-linter isn't installed.
 """
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -29,8 +30,9 @@ except lint.SetupError:
     HAVE_LINTER = False
 
 
-def run(*args: str, cwd: Path = REPO) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, str(LINT), *args], cwd=cwd, capture_output=True, text=True)
+def run(*args: str, cwd: Path = REPO, env: dict | None = None) -> subprocess.CompletedProcess:
+    full_env = None if env is None else {**os.environ, **env}
+    return subprocess.run([sys.executable, str(LINT), *args], cwd=cwd, capture_output=True, text=True, env=full_env)
 
 
 class References(unittest.TestCase):
@@ -104,6 +106,35 @@ class EndToEnd(unittest.TestCase):
             shutil.copytree(EXAMPLES / "library", Path(tmp, "proto", "library"))
             result = run(str(Path(tmp, "proto")), "-I", str(Path(tmp, "third_party")))
             self.assertEqual(result.returncode, 0, result.stderr + result.stdout)
+
+    def test_fresh_cache_is_fetched_for_a_transitive_google_import(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp, "proto", "library", "v1")
+            root.mkdir(parents=True)
+            (root / "common.proto").write_text(
+                textwrap.dedent(
+                    """\
+                    syntax = "proto3";
+                    package library.v1;
+                    import "google/api/field_behavior.proto";
+                    message Common { string x = 1 [(google.api.field_behavior) = OPTIONAL]; }
+                    """
+                )
+            )
+            (root / "book.proto").write_text(
+                textwrap.dedent(
+                    """\
+                    syntax = "proto3";
+                    package library.v1;
+                    import "library/v1/common.proto";
+                    message Book { Common common = 1; }
+                    """
+                )
+            )
+            env = {"XDG_CACHE_HOME": str(Path(tmp, "cache")), "CLAUDE_PLUGIN_DATA": ""}
+            result = run(str(root / "book.proto"), env=env)
+            self.assertIn(result.returncode, (0, 1), result.stderr + result.stdout)
+            self.assertTrue(Path(tmp, "cache", "aip-skill", "googleapis", lint.COMPLETE_MARKER).is_file())
 
     def test_config_is_found_in_a_parent_directory(self):
         with tempfile.TemporaryDirectory() as tmp:

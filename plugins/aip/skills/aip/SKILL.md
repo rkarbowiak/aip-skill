@@ -118,7 +118,7 @@ and read the exceptions it lists before calling something a defect.
 
 | Instead of | Use | Strength | AIP |
 |---|---|---|---|
-| `created_at`, `updated_at`, `creation_date` | `create_time`, `update_time` as `google.protobuf.Timestamp` | must (148 standard fields); `_time` suffix in general: should | 148, 142 |
+| `created_at`, `updated_at`, `creation_date` | `create_time`, `update_time` as `google.protobuf.Timestamp` (standard fields; `_time` suffix for timestamps) | should | 148, 142 |
 | `int32 timeout_seconds` for a span of time | `google.protobuf.Duration timeout` | should | 142 |
 | `id` or `book_id` as the resource's identifier | `string name` with the full resource name, `field_behavior = IDENTIFIER` | must | 122, 203 |
 | A List method without pagination "for now" | Pagination from the start; adding it later is breaking | must | 158 |
@@ -128,10 +128,10 @@ and read the exceptions it lists before calling something a defect.
 | An enum without a zero "unspecified" value | First value `<ENUM_NAME>_UNSPECIFIED = 0`, unless a real zero value such as `UNKNOWN` is clearer | should | 126 |
 | `size`, `distance` holding a number with a unit | The unit as suffix: `size_bytes`, `distance_meters` | must | 141 |
 | `float price` or `string currency` | `google.type.Money` for amounts; a field named `currency_code` (ISO 4217) for a bare currency | Money: recommended; `currency_code`: must | 143, 213 |
-| Update taking the whole resource with no mask | The resource plus `google.protobuf.FieldMask update_mask`; HTTP `PATCH` | mask type and name: must; `PATCH`: should | 134, 161 |
+| Update taking the whole resource with no mask | Partial update: the resource plus `google.protobuf.FieldMask update_mask`, HTTP `PATCH` | partial update: should; once supported, the `update_mask` field: must | 134, 161 |
 | `CreateBookResponse` and similar wrappers | Get, Create and Update return the resource itself | must | 131, 133, 134 |
 | Delete returning the deleted resource | `google.protobuf.Empty`; the resource only for soft delete | should | 135, 164 |
-| A client-chosen ID mixed into the resource | `string book_id` on the Create request | must (management plane), should (data plane) | 133 |
+| A client-chosen ID mixed into the resource | `string book_id` on the Create request, not on the resource | must | 133 |
 | Unannotated fields in request messages | `(google.api.field_behavior)` on every field of every message used in a request, including the resource in Create and Update, with at least `REQUIRED`, `OPTIONAL` or `OUTPUT_ONLY`; the resource's `etag` gets none | must (etag: should not) | 203 |
 | A `status` string that clients set | A nested `enum State`, field `state`, output only, changed through custom methods | should | 216 |
 | Custom error payloads or bare status codes | `google.rpc.Status` with canonical codes and an `ErrorInfo` in `details` | must | 193 |

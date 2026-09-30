@@ -37,6 +37,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -124,22 +125,29 @@ def import_root(proto: Path) -> Path:
 
 
 def find_config(roots: list[Path]) -> Path | None:
-    """First api-linter config in the cwd, the roots, or their parents up to a .git directory."""
-    for start in [Path.cwd(), *roots]:
+    """First api-linter config next to the linted files or in the cwd.
+
+    Each start directory is searched upwards until a .git directory or the
+    home directory, whichever comes first.
+    """
+    home = Path.home().resolve()
+    for start in [*roots, Path.cwd().resolve()]:
         for directory in [start, *start.parents]:
             for name in CONFIG_NAMES:
                 if (directory / name).is_file():
                     return directory / name
-            if (directory / ".git").exists():
+            if (directory / ".git").exists() or directory == home:
                 break
     return None
 
 
 def display(path: Path) -> str:
+    """Path relative to the cwd when it is inside it, absolute otherwise."""
     try:
-        return os.path.relpath(path)
+        relative = os.path.relpath(path)
     except ValueError:  # another drive on Windows
         return str(path)
+    return str(path) if relative.startswith("..") else relative
 
 
 # ---------------------------------------------------------------- googleapis
@@ -175,6 +183,9 @@ def fetch_googleapis(target: Path) -> None:
         )
     print(f"fetching googleapis common protos into {target} (one time)...", file=sys.stderr)
     target.parent.mkdir(parents=True, exist_ok=True)
+    for leftover in target.parent.glob("googleapis-*"):  # from runs that were killed
+        if time.time() - leftover.stat().st_mtime > 3600:
+            remove_tree(leftover)
     tmp = Path(tempfile.mkdtemp(prefix="googleapis-", dir=target.parent))
     try:
         steps = [
@@ -187,32 +198,63 @@ def fetch_googleapis(target: Path) -> None:
                 raise SetupError(f"failed to fetch googleapis protos: {result.stderr.strip()}")
         remove_tree(tmp / "src" / ".git")
         (tmp / "src" / COMPLETE_MARKER).write_text("ok\n", encoding="utf-8")
-        remove_tree(target)
-        os.replace(tmp / "src", target)
+        if (target / COMPLETE_MARKER).is_file():
+            return  # another run finished first; keep its copy
+        try:
+            remove_tree(target)
+            os.replace(tmp / "src", target)
+        except OSError:
+            if not (target / COMPLETE_MARKER).is_file():
+                raise
     finally:
         remove_tree(tmp)
+
+
+def unresolved_google_imports(protos: list[Path], includes: list[Path]) -> set[str]:
+    """google/ imports (other than well-known types) that no include directory provides.
+
+    Follows imports transitively through the project and any vendored google/
+    files, so an import two levels down, or a vendored file whose own
+    dependencies are missing, still counts.
+    """
+    missing: set[str] = set()
+    seen: set[Path] = set()
+    queue = list(protos)
+    while queue:
+        proto = queue.pop()
+        if proto in seen:
+            continue
+        seen.add(proto)
+        for name in IMPORT_RE.findall(proto.read_text(encoding="utf-8", errors="replace")):
+            if name.startswith("google/protobuf/"):
+                continue  # built into api-linter
+            found = next((d / name for d in includes if (d / name).is_file()), None)
+            if found:
+                queue.append(found)
+            elif name.startswith("google/"):
+                missing.add(name)
+    return missing
 
 
 def googleapis_include(protos: list[Path], includes: list[Path]) -> Path | None:
     """The cached googleapis directory, fetched if an import needs it.
 
-    Well-known types (google/protobuf/*) are built into api-linter. Any other
-    google/ import the project doesn't provide itself triggers the fetch. The
-    cache is returned even when the project vendors some of these files, so it
-    fills the gaps as the last import path.
+    The cache is returned whenever it exists, even when the project vendors
+    some of these files, so it fills the gaps as the last import path.
     """
     target = cache_dir() / "googleapis"
-    complete = (target / COMPLETE_MARKER).is_file()
-    needed = set()
-    for proto in protos:
-        for name in IMPORT_RE.findall(proto.read_text(encoding="utf-8", errors="replace")):
-            if name.startswith("google/") and not name.startswith("google/protobuf/"):
-                needed.add(name)
-    missing = [n for n in sorted(needed) if not any((d / n).is_file() for d in includes)]
-    if missing and not complete:
+    if (target / COMPLETE_MARKER).is_file():
+        return target
+    legacy = (target / "google" / "api" / "annotations.proto").is_file()  # older lint.py, no marker
+    if not unresolved_google_imports(protos, includes):
+        return target if legacy else None
+    try:
         fetch_googleapis(target)
-        complete = True
-    return target if complete else None
+    except SetupError:
+        if legacy:
+            return target
+        raise
+    return target
 
 
 # ---------------------------------------------------------------- linting
@@ -226,7 +268,7 @@ def aip_reference(rule_id: str) -> tuple[str | None, str]:
     scope, number = match.group(1), int(match.group(2))
     local = next(AIPS_DIR.glob(f"{number:04d}-*.md"), None) if scope == "core" else None
     if local:
-        return f"AIP-{number}", display(local)
+        return f"AIP-{number}", str(local)
     url = f"{SITE}/{number}" if scope == "core" else f"{SITE}/{scope}/{number}"
     return f"AIP-{number}", url
 
@@ -253,7 +295,12 @@ def run_linter(linter: str, root: Path, files: list[Path], includes: list[Path],
     except json.JSONDecodeError:
         report = None
     if not isinstance(report, list):
-        raise SetupError(f"api-linter failed (exit {result.returncode}):\n{result.stderr.strip() or result.stdout.strip()}")
+        searched = "\n".join(f"  {d}" for d in includes)
+        raise SetupError(
+            f"api-linter failed (exit {result.returncode}):\n{result.stderr.strip() or result.stdout.strip()}\n"
+            f"import paths searched, in order (the last one is the googleapis cache if present):\n{searched}\n"
+            "A missing project import usually needs -I pointing at the directory its path is relative to."
+        )
     for file_report in report:
         file_report["file_path"] = display(root / file_report.get("file_path", ""))
     return report

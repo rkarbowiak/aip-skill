@@ -31,6 +31,7 @@ UPSTREAM_URL = "https://github.com/aip-dev/google.aip.dev.git"
 SKILL_DIR = REPO_ROOT / "plugins" / "aip" / "skills" / "aip"
 AIPS_DIR = SKILL_DIR / "references" / "aips"
 INDEX_FILE = SKILL_DIR / "references" / "index.md"
+SKILL_UPSTREAM_FILE = SKILL_DIR / "references" / "UPSTREAM"
 SKILL_FILE = SKILL_DIR / "SKILL.md"
 
 SITE = "https://google.aip.dev"
@@ -248,8 +249,8 @@ def render_aip(aip: Aip, local: dict[int, Aip]) -> str:
         f"# AIP-{aip.id}: {aip.title}",
         "",
         f"> Source: <{aip.url}> (state: {aip.state}, category: {aip.category}).",
-        "> (c) Google LLC. Copied from aip-dev/google.aip.dev (commit pinned in the",
-        "> repository's UPSTREAM file) under CC BY 4.0 (text) and Apache 2.0 (code",
+        "> (c) Google LLC. Copied from aip-dev/google.aip.dev (the commit is in",
+        "> references/UPSTREAM) under CC BY 4.0 (text) and Apache 2.0 (code",
         "> samples). Changes: front matter removed, title prefixed, contents list",
         "> added, links rewritten to local files.",
         "",
@@ -386,6 +387,16 @@ def main() -> int:
     stale = {p for p in AIPS_DIR.glob("*.md")} - set(files)
     changed = [p for p, t in files.items() if not p.exists() or p.read_text(encoding="utf-8") != t]
 
+    # Pin a new commit only when it changed something bundled, so upstream
+    # commits that touch nothing here don't produce a sync pull request. The
+    # skill folder keeps its own copy of the pin, since it is distributed
+    # without the rest of the repository.
+    content_changed = bool(changed or stale)
+    new_pin = commit if args.update and content_changed else pinned
+    files[SKILL_UPSTREAM_FILE] = new_pin + "\n"
+    if not SKILL_UPSTREAM_FILE.exists() or SKILL_UPSTREAM_FILE.read_text(encoding="utf-8") != files[SKILL_UPSTREAM_FILE]:
+        changed.append(SKILL_UPSTREAM_FILE)
+
     if args.check:
         for p in sorted(changed) + sorted(stale):
             print(f"out of date: {p.relative_to(REPO_ROOT)}")
@@ -396,12 +407,9 @@ def main() -> int:
         p.unlink()
     for p in changed:
         p.write_text(files[p], encoding="utf-8", newline="\n")
-    # Pin the new commit only after its content is written, and only when it
-    # changed something, so upstream commits that touch nothing bundled here
-    # don't produce a sync pull request.
-    if args.update and (changed or stale) and commit != pinned:
-        UPSTREAM_FILE.write_text(commit + "\n", encoding="utf-8", newline="\n")
-    aip_count = len(files) - 2
+    if new_pin != pinned:  # written last, after the content it describes
+        UPSTREAM_FILE.write_text(new_pin + "\n", encoding="utf-8", newline="\n")
+    aip_count = len(files) - 3
     print(f"synced {aip_count} AIPs at {commit[:12]}: {len(changed)} written, {len(stale)} removed")
     return 0
 
