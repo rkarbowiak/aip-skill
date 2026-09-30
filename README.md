@@ -99,10 +99,10 @@ claude plugin eval ./plugins/aip     # runs model calls; costs money
 ```
 
 A weekly GitHub Action syncs from upstream and opens a pull request when a
-bundled AIP changed; it runs the tests before opening it. Pull requests opened
-with the default `GITHUB_TOKEN` don't trigger CI, so either add a `SYNC_TOKEN`
-secret (a fine-grained token with contents and pull-requests write) or allow
-GitHub Actions to create pull requests in the repository settings. When a sync
+bundled AIP changed. It runs the tests before opening the PR and then starts
+the CI workflow on the PR branch, since PRs opened with `GITHUB_TOKEN` don't
+trigger `pull_request` runs. It needs "Allow GitHub Actions to create and
+approve pull requests" enabled under Settings → Actions → General. When a sync
 lands, check whether the quick reference in `SKILL.md` needs updating.
 
 ## License

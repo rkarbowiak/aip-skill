@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write # to start CI on the PR branch
 
 defaults:
   run:
@@ -29,20 +30,17 @@ jobs:
           python tools/sync_aips.py --update 2>&1 | tee sync.log
           echo "commit=$(cut -c1-12 UPSTREAM)" >> "$GITHUB_OUTPUT"
 
-      # Pull requests opened with GITHUB_TOKEN don't trigger the CI workflow,
-      # so run the offline checks here before opening one.
+      # Fail before opening a PR if the new upstream text breaks the sync.
       - name: Check the result
         run: |
           python -m unittest discover -s tests -v
           python tools/sync_aips.py --check
 
-      # Set a SYNC_TOKEN secret (a fine-grained PAT or app token with
-      # contents and pull-requests write) if CI should run on the PR too.
-      # Without it, allow "GitHub Actions to create and approve pull requests"
-      # in the repository settings.
+      # Needs "Allow GitHub Actions to create and approve pull requests" in
+      # the repository's Actions settings.
       - uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        id: pr
         with:
-          token: ${{ secrets.SYNC_TOKEN || github.token }}
           branch: sync/aips
           commit-message: "Sync AIPs to aip-dev/google.aip.dev@${{ steps.sync.outputs.commit }}"
           title: "Sync AIPs to upstream ${{ steps.sync.outputs.commit }}"
@@ -53,3 +51,11 @@ jobs:
           add-paths: |
             UPSTREAM
             plugins/aip/skills/aip
+
+      # A PR opened with GITHUB_TOKEN doesn't start the pull_request CI run,
+      # but a workflow_dispatch does, and its checks show on the PR.
+      - name: Run CI on the PR branch
+        if: steps.pr.outputs.pull-request-operation == 'created' || steps.pr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ci.yml --ref sync/aips

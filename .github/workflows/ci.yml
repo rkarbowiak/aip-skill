@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Started by the Sync AIPs workflow on its PR branch: pull requests opened
+  # with GITHUB_TOKEN don't trigger pull_request runs, but workflow_dispatch
+  # does run, and its result shows on the PR's head commit.
+  workflow_dispatch:
 
 permissions:
   contents: read
