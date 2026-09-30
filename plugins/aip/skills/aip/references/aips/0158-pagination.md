@@ -211,3 +211,4 @@ the available results, the pagination interface is again applied and
 - **2019-08-01**: Changed the examples from "shelves" to "publishers", to
   present a better example of resource ownership.
 - **2019-07-19**: Update the opacity requirement from "should" to "must".
+stale line
