@@ -71,7 +71,7 @@ the local copy and quotes the first sentence of its guidance.
 - [AIP-153: Import and export](aips/0153-import-and-export.md): APIs may support import and export operations, which may create multiple new resources, or they may populate data into a single resource.
 - [AIP-154: Resource freshness validation](aips/0154-resource-freshness-validation.md): APIs often need to validate that a client and server agree on the current state of a resource before taking some kind of action on that resource.
 - [AIP-155: Request identification](aips/0155-request-identification.md): APIs may add a string request_id parameter to request messages (including those of standard methods) in order to uniquely identify particular requests.
-- [AIP-157: Partial responses](aips/0157-partial-responses.md): Sometimes, a resource can be either large or expensive to compute, and the API needs to give the user control over which fields it sends back.
+- [AIP-157: Partial responses](aips/0157-partial-responses.md): APIs may support partial responses.
 - [AIP-158: Pagination](aips/0158-pagination.md): RPCs returning collections of data must provide pagination at the outset, as it is a backwards-incompatible change to add pagination to an existing method.
 - [AIP-159: Reading across collections](aips/0159-reading-across-collections.md): Sometimes, it is useful for a user to be able to retrieve resources across multiple collections, or retrieve a single resource without needing to know what collection it is in.
 - [AIP-160: Filtering](aips/0160-filtering.md): APIs may provide filtering to users on List methods (or similar methods to query a collection, such as Search).

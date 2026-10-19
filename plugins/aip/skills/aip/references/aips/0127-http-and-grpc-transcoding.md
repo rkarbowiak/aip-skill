@@ -98,6 +98,14 @@ message CreateBookRequest {
   - The `body` **must not** be a `repeated` field.
   - Fields **should not** use the `json_name` annotation to alter the field
     name in JSON, unless doing so for backwards-compatibility reasons.
+- Request fields that are not bound to the URL path or the HTTP `body` are
+  passed as URL query parameters.
+
+**Note:** For the detailed transcoding behavior for the entire request
+(including how fields are bound across the URL path, HTTP request body, and URL
+query parameters), refer to the [`google.api.http`][http-proto] documentation.
+For information on how fields and types are encoded—including query parameters
+and well-known types—refer to the Protocol Buffers canonical [JSON encoding][].
 
 **Note:** Bi-directional streaming RPCs should not include a `google.api.http`
 annotation at all. If feasible, the service **should** provide non-streaming
@@ -133,6 +141,9 @@ rpc CreateBook(CreateBookRequest) returns (Book) {
 
 ## Changelog
 
+- **2026-10-14**: Added general note referencing `google.api.http` transcoding
+  documentation and Protocol Buffers JSON encoding for request fields and
+  well-known types.
 - **2022-08-18**: Added the comment that query string parameter names are
   in camelCase.
 - **2021-01-06**: Added clarification around `body` and nested fields.
@@ -148,6 +159,7 @@ rpc CreateBook(CreateBookRequest) returns (Book) {
 [aip-134]: 0134-standard-methods-update.md
 [aip-135]: 0135-standard-methods-delete.md
 [aip-136]: 0136-custom-methods.md
+[http-proto]: https://github.com/googleapis/googleapis/blob/master/google/api/http.proto
 [json encoding]: https://developers.google.com/protocol-buffers/docs/proto3#json
 [rpc]: https://en.wikipedia.org/wiki/Remote_procedure_call
 <!-- prettier-ignore-end -->
